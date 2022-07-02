@@ -33,36 +33,36 @@ add_library(${PROJECT_NAME} STATIC
             "src/Utils/OpenGL.cpp"
             "src/Utils/Vector.cpp"
  )
- 
+
 # Set up Cg
 # Static
 if (WIN32)
     target_link_libraries(${PROJECT_NAME} 
-        "${CMAKE_SOURCE_DIR}/libs/Cg/windows/cg.lib"
-        "${CMAKE_SOURCE_DIR}/libs/Cg/windows/cgGL.lib"
-        "${CMAKE_SOURCE_DIR}/libs/Cg/windows/glut32.lib")
+        "${${PROJECT_NAME}_SOURCE_DIR}/libs/Cg/windows/cg.lib"
+        "${${PROJECT_NAME}_SOURCE_DIR}/libs/Cg/windows/cgGL.lib"
+        "${${PROJECT_NAME}_SOURCE_DIR}/libs/Cg/windows/glut32.lib")
 
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/libs/Cg/windows/cg.dll"  $<TARGET_FILE_DIR:${PROJECT_NAME}>
-        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/libs/Cg/windows/cgGL.dll" $<TARGET_FILE_DIR:${PROJECT_NAME}>
-        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/libs/Cg/windows/glut32.dll" $<TARGET_FILE_DIR:${PROJECT_NAME}>
+        COMMAND ${CMAKE_COMMAND} -E copy "${${PROJECT_NAME}_SOURCE_DIR}/libs/Cg/windows/cg.dll"  ${${PROJECT_NAME}_BINARY_DIR}/cg.dll
+        COMMAND ${CMAKE_COMMAND} -E copy "${${PROJECT_NAME}_SOURCE_DIR}/libs/Cg/windows/cgGL.dll" ${${PROJECT_NAME}_BINARY_DIR}/cgGL.dll
+        COMMAND ${CMAKE_COMMAND} -E copy "${${PROJECT_NAME}_SOURCE_DIR}/libs/Cg/windows/glut32.dll" ${${PROJECT_NAME}_BINARY_DIR}/glut32.dll
     )
 endif (WIN32)
 if (APPLE)
     target_link_libraries(${PROJECT_NAME} 
-        "${CMAKE_SOURCE_DIR}/libs/Cg/mac/libCg.dylib")
+        "${${PROJECT_NAME}_SOURCE_DIR}/libs/Cg/mac/libCg.dylib")
 
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/libs/Cg/mac/libCg.dylib"
+        COMMAND ${CMAKE_COMMAND} -E copy "${${PROJECT_NAME}_SOURCE_DIR}/libs/Cg/mac/libCg.dylib" ${${PROJECT_NAME}_BINARY_DIR}/libCg.dylib
     )
 endif(APPLE)
 if (UNIX AND NOT APPLE)
     target_link_libraries(${PROJECT_NAME} 
-        "${CMAKE_SOURCE_DIR}/libs/Cg/linux64/libCg.so"
-        "${CMAKE_SOURCE_DIR}/libs/Cg/linux64/libCgGL.so")
+        "${${PROJECT_NAME}_SOURCE_DIR}/libs/Cg/linux64/libCg.so"
+        "${${PROJECT_NAME}_SOURCE_DIR}/libs/Cg/linux64/libCgGL.so")
 
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/libs/Cg/linux64/libCg.so"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/libs/Cg/linux64/libCgGL.so"
+        COMMAND ${CMAKE_COMMAND} -E copy "${${PROJECT_NAME}_SOURCE_DIR}/libs/Cg/linux64/libCg.so" ${${PROJECT_NAME}_BINARY_DIR}/libCg.so
+        COMMAND ${CMAKE_COMMAND} -E copy "${${PROJECT_NAME}_SOURCE_DIR}/libs/Cg/linux64/libCgGL.so" ${${PROJECT_NAME}_BINARY_DIR}/libCgGL.so
     )
 endif(UNIX AND NOT APPLE)
