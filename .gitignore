@@ -24,6 +24,7 @@
 CMakeSettings.json
 .vs/*
 build/*
+dist/*
 out/*
 pyDSCSRenderer.cpp
 pyDSCSRenderer.pyd
