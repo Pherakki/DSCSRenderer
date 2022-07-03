@@ -1,5 +1,5 @@
 # DSCSRenderer
-A C++ library for loading and rendering DSCS models into an OpenGL context. Currently in a usable, albiet unpleasant repository state. The project currently has a lot of bad code and compiler warnings that should be fixed with subsequent work. See build instructions below.
+A C++ library for loading and rendering DSCS models into an OpenGL context. Currently in a usable, albeit unpleasant repository state. The project currently has a lot of bad code and compiler warnings that should be fixed with subsequent work. See build instructions below.
 
 ## API
 [to be written]
@@ -8,7 +8,7 @@ A C++ library for loading and rendering DSCS models into an OpenGL context. Curr
 ### C++ with CMake
 The library does provide a pure C API so you should build the library as part of your program to ensure ABI compatibility. The CMakeLists.txt is set up to build a static library. To include this in your CMake project:
 
-1) Include the repository as a subdirectory of your respository.
+1) Include the repository as a subdirectory of your repository.
 2) Add the following lines to your CMakeLists.txt:
 
 `add_subdirectory(path/to/DSCSRenderer)`
