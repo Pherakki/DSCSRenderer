@@ -1,5 +1,5 @@
 # DSCSRenderer
-A C++ library for loading and rendering DSCS models into an OpenGL context. Currently in a usable, albiet unpleasant repository state. See build instructions below.
+A C++ library for loading and rendering DSCS models into an OpenGL context. Currently in a usable, albiet unpleasant repository state. The project currently has a lot of bad code and compiler warnings that should be fixed with subsequent work. See build instructions below.
 
 ## API
 [to be written]
