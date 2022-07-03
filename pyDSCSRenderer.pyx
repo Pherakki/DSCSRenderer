@@ -5,7 +5,7 @@ cdef extern from "<array>" namespace "std" nogil:
         farray3() except+
         float& operator[](size_t)
     
-cdef extern from "Renderer/DSCS/RenderObjects/Camera.hpp":
+cdef extern from "src/DSCS/RenderObjects/Camera.hpp":
     cdef cppclass Camera:
         Camera() except +
 
@@ -21,7 +21,7 @@ cdef extern from "Renderer/DSCS/RenderObjects/Camera.hpp":
         void mulRadius(float fac)
         void incAltAzi(float aziInc, float altInc)
 
-cdef extern from "Renderer/DSCS/Renderer.hpp" namespace "Rendering::DSCS":    
+cdef extern from "src/DSCS/Renderer.hpp" namespace "Rendering::DSCS":    
     cdef cppclass Renderer:
         Renderer() except +
         

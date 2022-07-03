@@ -1,3 +1,4 @@
+from distutils import sysconfig
 import os
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
@@ -19,7 +20,9 @@ elif platform == "win32":
 else:
     raise Exception("Unsupported platform: ", platform)
 
-BUILD_ARGS = defaultdict(lambda: ['-O3', '-g0'])
+
+# Generate dict of compiler args for different compiler versions
+BUILD_ARGS = {}
 for compiler, args in [
         ('msvc', ['/std:c++20']),
         ('gcc', ['-std=c++20']),
@@ -28,21 +31,43 @@ for compiler, args in [
         ('clang++', ['-std=c++20'])]:
     BUILD_ARGS[compiler] = args
     
-class build_ext_compiler_check(build_ext):
+# https://stackoverflow.com/a/40193040
+def get_ext_filename_without_platform_suffix(filename):
+    name, ext = os.path.splitext(filename)
+    ext_suffix = sysconfig.get_config_var('EXT_SUFFIX')
+
+    if ext_suffix == ext:
+        return filename
+
+    ext_suffix = ext_suffix.replace(ext, '')
+    idx = name.find(ext_suffix)
+
+    if idx == -1:
+        return filename
+    else:
+        return name[:idx] + ext
+
+class CustomBuildExt(build_ext):
     def build_extensions(self):
         compiler = self.compiler.compiler_type
         args = BUILD_ARGS[compiler]
         for ext in self.extensions:
             ext.extra_compile_args = args
         build_ext.build_extensions(self)
-    
+
+    def get_ext_filename(self, ext_name):
+        filename = super().get_ext_filename(ext_name)
+        return get_ext_filename_without_platform_suffix(filename)
+
 # Now compile
-setup(ext_modules = cythonize(
-    Extension(
+setup(
+    name="pyDSCSRenderer",
+    cmdclass={ 'build_ext': CustomBuildExt },
+    ext_modules = [Extension(
        "pyDSCSRenderer",
-       cmdclass={ 'build_ext': build_ext_compiler_check })
        sources=[
            "pyDSCSRenderer.pyx",
+           "libs/glad/src/glad.c",
            "src/DSCS/Renderer.cpp",
            "src/DSCS/DataObjects/AnimationSampler.cpp",
            "src/DSCS/DataObjects/OpenGLDSCSMaterial.cpp",
@@ -62,7 +87,6 @@ setup(ext_modules = cythonize(
            "src/FileFormats/DSCS/NameFile/NameReadWrite.cpp",
            "src/FileFormats/DSCS/SkelFile/SkelReadWrite.cpp",
            "src/FileFormats/Textures/DDS.cpp",
-           "src/glad/src/glad.c",
            "src/serialisation/Exceptions.cpp",
            "src/serialisation/ReadWriter.cpp",
            "src/Utils/BitManip.cpp",
@@ -73,10 +97,8 @@ setup(ext_modules = cythonize(
            "src/Utils/Vector.cpp"
        ],
        language="c++",
-       extra_compile_args=[cpp_version],
        include_dirs=[*cg_include_dirs],
        library_dirs =[*cg_library_dirs],
        libraries=[*cg_libraries]
-       
-   )
-))
+   )]
+)

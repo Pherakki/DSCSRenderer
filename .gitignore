@@ -23,4 +23,7 @@
 # Project
 CMakeSettings.json
 .vs/*
+build/*
 out/*
+pyDSCSRenderer.cpp
+pyDSCSRenderer.pyd
