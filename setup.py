@@ -113,7 +113,13 @@ setup(
 
 os.makedirs("dist", exist_ok=True)
 compiled_sobj = os.extsep.join((package_name, pysobj_suffix))
-shutil.copy2(compiled_sobj, os.path.join("dist", compiled_sobj))
+dest_path = os.path.join("dist", compiled_sobj)
+if os.path.exists(dest_path):
+    os.remove(dest_path)
+shutil.copy2(compiled_sobj, dest_path)
 for item in cg_libraries:
     item = os.extsep.join((item, cgsobj_suffix))
-    shutil.copy2(os.path.join(cg_library_dir, item), os.path.join("dist", item))
+    dest_path = os.path.join("dist", item)
+    if os.path.exists(dest_path):
+        continue
+    shutil.copy2(os.path.join(cg_library_dir, item), dest_path)
