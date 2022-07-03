@@ -2,6 +2,7 @@ from distutils import sysconfig
 import os
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
+import shutil
 from sys import platform
 
 from Cython.Build import cythonize
@@ -9,14 +10,20 @@ from Cython.Build import cythonize
 # Link the correct libraries
 cg_include_dirs=["libs/Cg"]
 if platform == "linux" or platform == "linux2":
-    cg_library_dirs = ["libs/Cg/linux64"]
+    cg_library_dir = "libs/Cg/linux64"
     cg_libraries=['Cg', 'CgGL']
+    cgsobj_suffix = "so"
+    pysobj_suffix = "so"
 elif platform == "darwin":
-    cg_library_dirs = ["libs/Cg/mac"]
+    cg_library_dir = "libs/Cg/mac"
     cg_libraries=['Cg']
+    cgsobj_suffix = "dylib"
+    pysobj_suffix = "dylib"
 elif platform == "win32":
-    cg_library_dirs = ["libs/Cg/windows"]
+    cg_library_dir = "libs/Cg/windows"
     cg_libraries=['cg', 'cgGL', 'glut32']
+    cgsobj_suffix = "dll"
+    pysobj_suffix = "pyd"
 else:
     raise Exception("Unsupported platform: ", platform)
 
@@ -60,11 +67,12 @@ class CustomBuildExt(build_ext):
         return get_ext_filename_without_platform_suffix(filename)
 
 # Now compile
+package_name = "pyDSCSRenderer"
 setup(
-    name="pyDSCSRenderer",
+    name=package_name,
     cmdclass={ 'build_ext': CustomBuildExt },
     ext_modules = [Extension(
-       "pyDSCSRenderer",
+       package_name,
        sources=[
            "pyDSCSRenderer.pyx",
            "libs/glad/src/glad.c",
@@ -98,7 +106,14 @@ setup(
        ],
        language="c++",
        include_dirs=[*cg_include_dirs],
-       library_dirs =[*cg_library_dirs],
+       library_dirs =[cg_library_dir],
        libraries=[*cg_libraries]
    )]
 )
+
+os.makedirs("dist", exist_ok=True)
+compiled_sobj = os.extsep.join((package_name, pysobj_suffix))
+shutil.copy2(compiled_sobj, os.path.join("dist", compiled_sobj))
+for item in cg_libraries:
+    item = os.extsep.join((item, cgsobj_suffix))
+    shutil.copy2(os.path.join(cg_library_dir, item), os.path.join("dist", item))
