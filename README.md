@@ -1,6 +1,9 @@
 # DSCSRenderer
 A C++ library for loading and rendering DSCS models into an OpenGL context.
 
+## API
+<to be written>
+
 ## Building
 ### C++ with CMake
 1) Include the repository as a subdirectory of your respository.
