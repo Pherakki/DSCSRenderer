@@ -38,6 +38,7 @@ GLuint loadDDS(const char* path, TextureType tex_type)
     // probably should check if the EXT is available
     unsigned int blockSize;
     unsigned int format;
+    unsigned int channels = 0;
     bool compressed = true;
     if (strncmp(fourCC, "DXT1", 4) == 0) {
         format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
@@ -53,9 +54,37 @@ GLuint loadDDS(const char* path, TextureType tex_type)
     }
     else if (strncmp(fourCC, "", 4) == 0)
     {
-        format = 0;
         blockSize = 0;
         compressed = false;
+
+        channels = (header[84] | (header[85] << 0x08) | (header[86] << 0x10) | (header[87] << 0x18)) / 8;
+        unsigned int r_flag = header[84] | (header[85] << 0x08) | (header[86] << 0x10) | (header[87] << 0x18);
+        unsigned int g_flag = header[88] | (header[89] << 0x08) | (header[90] << 0x10) | (header[91] << 0x18);
+        unsigned int b_flag = header[92] | (header[93] << 0x08) | (header[94] << 0x10) | (header[95] << 0x18);
+        unsigned int a_flag = header[96] | (header[97] << 0x08) | (header[98] << 0x10) | (header[99] << 0x18);
+        if (channels == 4)
+        {
+            if (r_flag == 0xFF000000 && g_flag == 0x00FF0000 && b_flag == 0x0000FF00)
+                format = GL_RGBA;
+            else
+                format = GL_BGRA;
+        }
+        else if (channels == 3)
+        {
+            if (r_flag == 0xFF000000 && g_flag == 0x00FF0000 && b_flag == 0x0000FF00)
+                format = GL_RGB;
+            else
+                format = GL_BGR;
+        }
+        else if (channels == 1)
+        {
+            format = GL_LUMINANCE;
+        }
+        else
+        {
+            std::string debug_string = "Unknown number of channels \'" + std::to_string(channels) + "\'";
+            throw std::runtime_error(debug_string.c_str());
+        }
     }
     else {
         // unhandled type
@@ -89,6 +118,19 @@ GLuint loadDDS(const char* path, TextureType tex_type)
     }
     checkGLError();
 
+    unsigned int mag_filter_param;
+    unsigned int min_filter_param;
+    if (compressed)
+    {
+        mag_filter_param = GL_LINEAR;
+        min_filter_param = GL_LINEAR_MIPMAP_LINEAR;
+    }
+    else
+    {
+        mag_filter_param = GL_NEAREST;
+        min_filter_param = GL_NEAREST;
+    }
+
     uint16_t texture_slot;
     switch (tex_type)
     {
@@ -102,8 +144,8 @@ GLuint loadDDS(const char* path, TextureType tex_type)
         glTexParameteri(texture_slot, GL_TEXTURE_BASE_LEVEL, 0);
         glTexParameteri(texture_slot, GL_TEXTURE_MAX_LEVEL, mipMapCount - 1);
         // Correct for a "standard" texture
-        glTexParameteri(texture_slot, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(texture_slot, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(texture_slot, GL_TEXTURE_MAG_FILTER, mag_filter_param);
+        glTexParameteri(texture_slot, GL_TEXTURE_MIN_FILTER, min_filter_param);
         glTexParameteri(texture_slot, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(texture_slot, GL_TEXTURE_WRAP_T, GL_REPEAT);
         break;
@@ -114,8 +156,8 @@ GLuint loadDDS(const char* path, TextureType tex_type)
         glBindTexture(texture_slot, tid);
         glTexParameteri(texture_slot, GL_TEXTURE_BASE_LEVEL, 0);
         glTexParameteri(texture_slot, GL_TEXTURE_MAX_LEVEL, mipMapCount - 1);
-        glTexParameteri(texture_slot, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(texture_slot, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(texture_slot, GL_TEXTURE_MAG_FILTER, mag_filter_param);
+        glTexParameteri(texture_slot, GL_TEXTURE_MIN_FILTER, min_filter_param);
         glTexParameteri(texture_slot, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(texture_slot, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         break;
@@ -126,8 +168,8 @@ GLuint loadDDS(const char* path, TextureType tex_type)
         glBindTexture(texture_slot, tid);
         glTexParameteri(texture_slot, GL_TEXTURE_BASE_LEVEL, 0);
         glTexParameteri(texture_slot, GL_TEXTURE_MAX_LEVEL, mipMapCount - 1);
-        glTexParameteri(texture_slot, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(texture_slot, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(texture_slot, GL_TEXTURE_MAG_FILTER, mag_filter_param);
+        glTexParameteri(texture_slot, GL_TEXTURE_MIN_FILTER, min_filter_param);
         glTexParameteri(texture_slot, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(texture_slot, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(texture_slot, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -188,15 +230,9 @@ GLuint loadDDS(const char* path, TextureType tex_type)
             switch (tex_type)
             {
             case TextureType::Texture2D:
-                glTexImage2D(texture_slot, level, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer + offset);
-                checkGLError();
-                break;
             case TextureType::TextureCLUT:
-                glTexImage2D(texture_slot, level, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer + offset);
-                checkGLError();
-                break;
             case TextureType::TextureLuminance:
-                glTexImage2D(texture_slot, level, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, buffer + offset);
+                glTexImage2D(texture_slot, level, channels, width, height, 0, format, GL_UNSIGNED_BYTE, buffer + offset);
                 checkGLError();
                 break;
             case TextureType::TextureCube:
