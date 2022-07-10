@@ -95,10 +95,52 @@ namespace Rendering::DSCS
 		model->anim_sampler_a.setSkel(model->skeleton);
 	}
 
+	void renderMesh(std::shared_ptr<Rendering::DSCS::DataObjects::OpenGLDSCSMesh>& mesh,
+		std::shared_ptr<Rendering::DSCS::DataObjects::OpenGLDSCSModel>& model,
+		Rendering::DSCS::AnimationBuffer& animation_buffer,
+		std::unique_ptr<Rendering::ShaderBackends::cgGLShaderBackend>& shader_backend)
+	{
+
+		// Load up the matrix palette with skeletal bone matrices
+		for (uint16_t idx = 0; idx < mesh->used_bones.size(); ++idx)
+		{
+			for (uint8_t k = 0; k < 12; ++k)
+			{
+				animation_buffer.matrix_palette_buffer[12 * idx + k] = model->skeleton.transform_buffer[mesh->used_bones[idx]][k];
+			}
+		}
+
+		// upload default shader uniform values to the animation buffer
+		mesh->material->syncAnimationBuffer();
+		// calculate shader uniform animations
+		model->sampleShaderUniformAnimation(mesh->material, animation_buffer);
+		// upload shader uniform animation values
+		mesh->material->bind();
+		mesh->checkGLError();
+
+		shader_backend->checkBackendForCgError("Setting MVP...");
+		mesh->bind();
+		mesh->checkGLError();
+		mesh->draw();
+		mesh->checkGLError();
+		mesh->unbind();
+		mesh->checkGLError();
+		mesh->material->unbind();
+
+		mesh->checkGLError();
+		shader_backend->checkBackendForCgError("Finishing unbind...");
+	}
+
 	void Renderer::render()
 	{
+		// This needs a serious refactor
+		// Need to first get all opaque meshes across *all* models
+		// Then need to sort blended meshes across *all* models
+		// Then chuck all meshes into the renderMesh function
 		for (auto& kv : this->models)
 		{
+			std::vector<int> delayed_renders;
+
 			auto& model = kv.second;
 			auto& skeleton = model->skeleton;
 			// Calculate the model's skeleton position for this frame
@@ -113,34 +155,46 @@ namespace Rendering::DSCS
 				auto& mesh = model->meshes[j];
 				mesh->checkGLError();
 
-				// Load up the matrix palette with skeletal bone matrices
-				for (uint16_t idx = 0; idx < mesh->used_bones.size(); ++idx)
+				// Disgusting hack to fix blending... fix later...
+				bool converged = false;
+				for (const auto& setting : mesh->material->opengl_settings)
 				{
-					for (uint8_t k = 0; k < 12; ++k)
+					if (setting->getID() == 0xA4) // GL_BLEND
 					{
-						this->animation_buffer.matrix_palette_buffer[12 * idx + k] = model->skeleton.transform_buffer[mesh->used_bones[idx]][k];
+						converged = true;
+						break;
 					}
 				}
+				if (converged)
+				{
+					delayed_renders.push_back(j);
+					continue;
+				}
+				// End hack
 
-				// upload default shader uniform values to the animation buffer
-				mesh->material->syncAnimationBuffer();
-				// calculate shader uniform animations
-				model->sampleShaderUniformAnimation(mesh->material, this->animation_buffer);
-				// upload shader uniform animation values
-				mesh->material->bind();
-				mesh->checkGLError();
+				renderMesh(mesh, model, this->animation_buffer, this->shader_backend);
+			}
 
-				this->shader_backend->checkBackendForCgError("Setting MVP...");
-				mesh->bind();
-				mesh->checkGLError();
-				mesh->draw();
-				mesh->checkGLError();
-				mesh->unbind();
-				mesh->checkGLError();
-				mesh->material->unbind();
+			std::vector<std::pair<float, int>> ordered_meshes;
+			for (const auto& j : delayed_renders)
+			{
+				auto& mesh = model->meshes[j];
+				float dist = 0;
+				for (int k = 0; k < 3; ++k)
+				{
+					float ax_dist = this->camera.getPosition()[k] - mesh->mesh.mesh_centre[k];
+					dist += ax_dist * ax_dist;
+				}
+				ordered_meshes.emplace_back(std::make_pair(dist, j));
+			}
 
+			std::sort(ordered_meshes.rbegin(), ordered_meshes.rend());
+
+			for (const auto& [dist, j] : ordered_meshes)
+			{
+				auto& mesh = model->meshes[j];
 				mesh->checkGLError();
-				this->shader_backend->checkBackendForCgError("Finishing unbind...");
+				renderMesh(mesh, model, this->animation_buffer, this->shader_backend);
 			}
 		}
 
@@ -155,4 +209,5 @@ namespace Rendering::DSCS
 			// Advance animation time
 			model->tickSamplers(this->delta_time);
 	}
+
 }
