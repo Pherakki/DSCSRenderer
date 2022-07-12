@@ -1,3 +1,4 @@
+#include <cstring>
 #include <stdexcept>
 
 #include "OpenGLDSCSMaterial.hpp"
@@ -168,7 +169,7 @@ namespace Rendering::DSCS::DataObjects
 		{
 		case 0xA0: // glAlphaFunc
 			float ref;
-			memcpy(&ref, &payload[1], sizeof(ref));
+			std::memcpy(&ref, &payload[1], sizeof(ref));
 			this->opengl_settings.emplace_back(std::make_shared<OpenGLSettings::OpenGLSettingGlAlphaFunc>(0xA0, payload[0], ref));
 			return;
 		case 0xA1: // GL_ALPHA_TEST
