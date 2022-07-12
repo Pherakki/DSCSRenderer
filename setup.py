@@ -11,12 +11,12 @@ from Cython.Build import cythonize
 cg_include_dirs=["libs/Cg"]
 if platform == "linux" or platform == "linux2":
     cg_library_dir = "libs/Cg/linux64"
-    cg_libraries=['Cg', 'CgGL']
+    cg_libraries=['libCg', 'libCgGL']
     cgsobj_suffix = "so"
     pysobj_suffix = "so"
 elif platform == "darwin":
     cg_library_dir = "libs/Cg/mac"
-    cg_libraries=['Cg']
+    cg_libraries=['libCg']
     cgsobj_suffix = "dylib"
     pysobj_suffix = "dylib"
 elif platform == "win32":
@@ -32,10 +32,11 @@ else:
 BUILD_ARGS = {}
 for compiler, args in [
         ('msvc', ['/std:c++20']),
-        ('gcc', ['-std=c++20']),
-        ('g++', ['-std=c++20']),
+        ('gcc', ['-std=c++2a']),
+        ('g++', ['-std=c++2a']),
         ('clang', ['-std=c++20']),
-        ('clang++', ['-std=c++20'])]:
+        ('clang++', ['-std=c++20']),
+        ('unix', ['-std=c++2a'])]:
     BUILD_ARGS[compiler] = args
     
 # https://stackoverflow.com/a/40193040
